@@ -19,3 +19,14 @@
 - Mechanism: past_key_values carries forward each layer's K/V tensors,
   so each step only computes K/V for the new token and reuses the rest
 
+## Stage 2a — Static batching
+- 3 prompts, different lengths, batched together with left-padding
+- Time: 4.69s for 20 tokens × 3 prompts (60 total)
+- Aggregate tokens/sec: 12.79 (vs 6.71 single-request in Stage 1)
+- ~1.9x throughput for 3 concurrent requests — not full 3x because:
+  1. CPU has less parallel headroom than GPU
+  2. Short prompts (e.g. "Hi") waste compute attending over padding
+     from longer prompts in the same batch
+- Left-padding required so generated tokens stay contiguous at the
+  sequence end (right-padding breaks positional continuity)
+
