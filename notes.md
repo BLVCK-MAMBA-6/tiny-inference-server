@@ -69,3 +69,13 @@
   systems use a real draft MODEL (can generalize to any text) rather
   than pure text pattern-matching (only works on repeated content:
   code, JSON, structured/templated output).
+
+## Stage 4 — FastAPI server
+- Model loaded once at startup via lifespan context manager (not per-request)
+- /generate endpoint wraps Stage 1's KV-cache generation loop
+- /health endpoint confirms model_loaded state
+- Test: 20 tokens, 3.19s, 6.26 tok/s -- consistent with Stage 1 benchmark
+  (6.71 tok/s), confirms caching path is actually being used in the
+  server, not silently regressed to naive generation
+- Real HTTP service now, not just benchmark scripts -- curl-able,
+  usable by any client
