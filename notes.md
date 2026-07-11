@@ -58,3 +58,14 @@
   guess plausible tokens for ANY text, not just previously-seen text.
 - Not yet combined with Stage 1's KV-cache (isolated for clarity, same
   as Stage 2b's tradeoff)
+
+## Stage 3 — Limitation confirmed (non-repetitive prompt)
+- Prompt: "The history of the Roman Empire began when"
+- Draft rounds attempted: 0 (no repeated 3-gram found anywhere in the text)
+- Tokens/sec: 2.33 -- statistically identical to Stage 0's naive 2.27
+- Confirms: n-gram/prompt-lookup drafting provides ZERO benefit on novel
+  prose, falling back cleanly to plain token-by-token generation.
+  No correctness cost, but no speedup either -- this is why production
+  systems use a real draft MODEL (can generalize to any text) rather
+  than pure text pattern-matching (only works on repeated content:
+  code, JSON, structured/templated output).

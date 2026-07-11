@@ -26,7 +26,7 @@ def n_gram_draft(input_ids, n=3, num_draft_tokens=4):
     return []
 
 # Repetitive on purpose -- this is what lets n-gram matching actually work
-prompt = "one two three four one two three four one two three four"
+prompt = "The history of the Roman Empire began when"
 input_ids = tokenizer(prompt, return_tensors="pt")["input_ids"]
 
 NUM_TOKENS_TO_GENERATE = 30
