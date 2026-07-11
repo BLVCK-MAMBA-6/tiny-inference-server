@@ -30,3 +30,31 @@
 - Left-padding required so generated tokens stay contiguous at the
   sequence end (right-padding breaks positional continuity)
 
+## Stage 2b — Continuous batching (no cache, scheduler isolated)
+- MAX_BATCH_SIZE = 2, 5 queued requests, different lengths
+- Scheduler correctly recycles slots as requests finish (verified in logs:
+  request 1 finishes at step 4, request 2 fills the freed slot at step 5)
+- Aggregate tokens/sec: 3.60 — WORSE than Stage 1 (6.71) and Stage 2a (12.79)
+- Why: this version has no KV-cache, so every step recomputes full
+  attention for all active requests (Stage 0's inefficiency, wrapped
+  in a scheduler)
+- Key insight: continuous batching (scheduling) and KV-caching (memory
+  reuse) are separate concerns. Production systems (vLLM, TGI) need
+  BOTH simultaneously — that's genuinely the hard systems-engineering
+  problem (vLLM's PagedAttention exists to solve exactly this: giving
+  each request its own persistent, resizable cache inside a shared batch)
+
+  ## Stage 3 — Speculative decoding (n-gram/prompt-lookup draft, no cache)
+- Repetitive prompt: "one two three four" x3
+- 30 tokens, 6 draft rounds, 4/4 accepted EVERY round (best case)
+- Time: 4.23s, Tokens/sec: 7.10 (vs Stage 0's 2.27 -- ~3x speedup, no cache)
+- Mechanism: n-gram match on already-seen text proposes draft tokens,
+  ONE forward pass verifies all of them, accepted prefix + model's own
+  correction token both come "free" from that single pass
+- LIMITATION (important): only works when text is repetitive/structured.
+  Non-repetitive prompts (e.g. general prose) get near-zero draft
+  acceptance since there's no earlier occurrence to match against.
+  Production systems use a real small draft MODEL instead, which can
+  guess plausible tokens for ANY text, not just previously-seen text.
+- Not yet combined with Stage 1's KV-cache (isolated for clarity, same
+  as Stage 2b's tradeoff)
